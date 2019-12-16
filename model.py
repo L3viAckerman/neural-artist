@@ -22,6 +22,20 @@ def transform(image):
     preds = tf.nn.tanh(conv_t3) * 150 + 255. / 2
     return preds
 
+# Light version of transform
+def light_transform(image):
+    conv1 = _conv_layer_transform(image, 32, 9, 1)
+    conv2 = _conv_layer_transform(conv1, 64, 3, 2)
+    conv3 = _conv_layer_transform(conv2, 128, 3, 2)
+    resid1 = _residual_block(conv3, 3)
+    resid2 = _residual_block(resid1, 3)
+    resid3 = _residual_block(resid2, 3)
+    conv_t1 = _conv_tranpose_layer(resid3, 32, 3, 2)
+    conv_t2 = _conv_tranpose_layer(conv_t1, 32, 3, 2)
+    conv_t3 = _conv_layer_transform(conv_t2, 3, 9, 1, relu=False)
+    preds = tf.nn.tanh(conv_t3) * 150 + 255. / 2
+    return preds
+
 def _conv_tranpose_layer(net, num_filters, filter_size, strides):
     weights_init = _conv_init_vars(
         net, num_filters, filter_size, transpose=True)
@@ -48,6 +62,9 @@ def _conv_layer_transform(net, num_filters, filter_size, strides, relu=True):
         net = tf.nn.relu(net)
     return net
 
+def _residual_block_light(net, filter_size=3):
+    tmp = _conv_layer_transform(net, 64, filter_size, 1)
+    return net + _conv_layer_transform(tmp, 64, filter_size, 1, relu=False)
 
 def _residual_block(net, filter_size=3):
     tmp = _conv_layer_transform(net, 128, filter_size, 1)
@@ -88,8 +105,7 @@ def VGGnet(data_path, input_image):
 	      'conv5_2', 'relu5_2', 'conv5_3', 'relu5_3', 'conv5_4', 'relu5_4')
 
 	data = scipy.io.loadmat(data_path)
-	# mean = data['normalization'][0][0][0]
-	# mean_pixel = np.mean(mean, axis=(0, 1))
+
 	weights = data['layers'][0]
 
 	net = {}
@@ -101,9 +117,7 @@ def VGGnet(data_path, input_image):
 			    kernels, bias = weights[i][0][0][0][0]	
 		    else:
 			    kernels, bias = weights[i][0][0][2][0]
-			    # matconvnet: weights are [width, heig	# mean = data['normalization'][0][0][0]
-	# mean_pixel = np.mean(mean, axis=(0, 1))ht, in_channels, out_channels]
-			    # tensorflow: weights are [height, width, in_channels, out_channels]
+
 		    kernels = np.transpose(kernels, (1, 0, 2, 3))
 		    bias = bias.reshape(-1)
 		    current = _conv_layer(current, kernels, bias)

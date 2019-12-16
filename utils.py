@@ -28,7 +28,7 @@ def get_img(src, img_size=False):
 	if img_size is not False:
 		img_target_size = (img_size[0],img_size[1])
 		img = cv2.resize(img,img_target_size,interpolation = cv2.INTER_CUBIC)
-        
+
 	return img
 
 def resize_img(img_path):
@@ -50,3 +50,4 @@ def exists(p, msg):
 
 
 
+print(list_files('./images/styles/'))
